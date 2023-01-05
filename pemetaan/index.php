@@ -2,8 +2,8 @@
  require_once("db.php");
  $conn = new  connectToDB();
  $companies = $conn->getCompaniesList();
-//  $streets = $conn->getStreetsList();
-//  $areas = $conn->getAreasList();
+ $streets = $conn->getStreetsList();
+ $areas = $conn->getAreasList();
 ?>
 <!DOCTYPE html>
 <html>
@@ -14,15 +14,45 @@
   <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"></script>
 </head>
 <body>
- <div id="map" style="width: 600px; height: 400px"></div>
+ <div id="map" style="width: 1300px; height: 800px"></div>
  <script>
 
-const map = L.map('map').setView([-0.9517445901657297, 100.4015577975347], 13);
+//const map = L.map('map').setView([-0.9462510832514028, 100.41665073650391], 13);
 
-const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+/* const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
   attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
+}); */
+
+var perusahaan = L.layerGroup();
+var jalan =L.layerGroup();
+var area = L.layerGroup();
+const osm= L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,
+  attribution:'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+
+});
+
+var mapboxUrl = "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw";
+var street=L.tileLayer(mapboxUrl, {
+  id:'mapbox/streets-v11',
+  titleSize:512,
+  zoomOffset:-1
+});
+
+var satellite=L.tileLayer(mapboxUrl, {
+  id:'mapbox/satellite-v9',
+  titleSize:512,
+  zoomOffset:-1
+});
+
+var map =L.map('map',{
+
+  center:[-0.9168981900273002, 100.4535596258778],
+  zoom:19,
+  layers:(osm,perusahaan)
+});
+
 
   
   $( document ).ready(function() {
@@ -30,6 +60,18 @@ const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
    addStreets();   
    addAreas();   
   });
+
+  var baseMaps ={
+    "openStreetMap": osm,
+    "MapBoxStreet":street,
+    "satellite":satellite
+  }
+
+  var overlays ={
+    "perusahaan": perusahaan,
+    "jalan":jalan,
+    "area":area
+  }
   
   function addCompanies() {
    for(var i=0; i<companies.length; i++) {
@@ -61,6 +103,22 @@ const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
    return latLngLine;
   }
   
+
+  /*function addAreas() {
+   for(var i=0; i < areas.length; i++) {
+    var polygon = L.polygon( stringToGeoPoints(areas[i]['geolocations']), { color: 'blue'}).addTo(map);
+    polygon.bindPopup( "<b>" + areas[i]['name']);   
+   }
+  }
+  
+  */
+  function addStreets() {
+   for(var i=0; i < streets.length; i++) {
+    var polyline = L.polyline( stringToGeoPoints(streets[i]['geolocations']), { color: 'red'}).addTo(map);
+    polyline.bindPopup( "<b>" + streets[i]['name']);   
+   }
+  }
+
   function addAreas() {
    for(var i=0; i < areas.length; i++) {
     var polygon = L.polygon( stringToGeoPoints(areas[i]['geolocations']), { color: 'blue'}).addTo(map);
@@ -68,16 +126,10 @@ const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
    }
   }
   
-  function addStreets() {
-   for(var i=0; i < streets.length; i++) {
-    var polyline = L.polyline( stringToGeoPoints(streets[i]['geolocations']), { color: 'red'}).addTo(map);
-    polyline.bindPopup( "<b>" + streets[i]['name']);   
-   }
-  }
-  
   var companies = JSON.parse( '<?php echo json_encode($companies) ?>' );
-  //var streets = JSON.parse( '<//?php echo json_encode($streets) ?>' );
-  //var areas = JSON.parse( '<//?php echo json_encode($areas) ?>' );
+  var streets = JSON.parse( '<?php echo json_encode($streets) ?>' );
+  var areas = JSON.parse( '<?php echo json_encode($areas) ?>' );
+  var layerControl=L.control.layers(baseMaps,overlays).addTo(map);
  </script>
 </body>
 </html>
